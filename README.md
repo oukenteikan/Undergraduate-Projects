@@ -1,2 +1,2 @@
 # Project-for-IC
-Project for Introduction to Computing
+Project for Introduction to Computation
