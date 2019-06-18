@@ -6,8 +6,6 @@
 
 **数据结构与算法实习**(Practice of Data Structure and Algorithm)：提取标签
 
-**算法设计与分析**(Algorithm Design and Analysis)：推荐系统
-
 **数据库概论**(Introduction of Database)：共享单车系统
 
 **数据科学导引**(Introduction of Data Science)：GPA预测、房价预测、风速预测
