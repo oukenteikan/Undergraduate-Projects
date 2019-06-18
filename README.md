@@ -18,7 +18,4 @@
 
 **时间序列分析**(Time Series Analysis)：比特币与显卡公司
 
-**统计学习**(Statistical Learning)：lasso by LDA
-
-**公共财政学**(Public Finance)：土地财政网站数据爬取
-
+**统计学习**(Statistical Learning)：llda, admm
