@@ -12,8 +12,6 @@
 
 **数据挖掘导论**(Introduction of Data Mining)：EXGB
 
-**计算方法**(Numerical Method)：双曲偏微分
-
 **深度学习**(Deep Learning)：图像修复
 
 **计算机视觉与深度学习**(Computer Vision and Deep Learning)：视频检测
