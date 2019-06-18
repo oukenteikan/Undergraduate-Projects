@@ -19,3 +19,5 @@
 **时间序列分析**(Time Series Analysis)：比特币与显卡公司
 
 **统计学习**(Statistical Learning)：llda, admm
+
+**计算机系统导论**(Introduction of Computer Systems)：全部lab
