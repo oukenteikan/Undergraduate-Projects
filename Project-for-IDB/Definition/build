@@ -1,0 +1,76 @@
+DROP DATABASE IF EXISTS `cloudbike`;
+
+CREATE DATABASE `cloudbike`;
+
+use `cloudbike`;
+
+CREATE TABLE `location`(
+`ID_location` INT UNSIGNED AUTO_INCREMENT,
+`district` VARCHAR(16) NOT NULL,
+`street-r` VARCHAR(32) NOT NULL,
+`street-c` VARCHAR(32) NOT NULL,
+PRIMARY KEY(`ID_location`)
+);
+
+CREATE TABLE `user`(
+`ID_user` INT UNSIGNED AUTO_INCREMENT,
+`account_number` VARCHAR(16) NOT NULL,
+`pwd_user` VARCHAR(16) NOT NULL,
+`alias` VARCHAR(16) NOT NULL,
+`gender` VARCHAR(8),
+`job` VARCHAR(32),
+`balance` FLOAT NOT NULL,
+`state_user` TINYINT NOT NULL,
+PRIMARY KEY(`ID_user`)
+);
+
+CREATE TABLE `bike`(
+`ID_bike` INT UNSIGNED AUTO_INCREMENT,
+`type` VARCHAR(16) NOT NULL,
+`price` FLOAT NOT NULL,
+`state_bike` TINYINT NOT NULL,
+`broken` TINYINT NOT NULL,
+`pwd_bike` VARCHAR(16) NOT NULL,
+`ID_location` INT UNSIGNED NOT NULL,
+`long` DOUBLE NOT NULL,
+`lat` DOUBLE NOT NULL,
+PRIMARY KEY(`ID_bike`),
+FOREIGN KEY (`ID_location`) REFERENCES location(`ID_location`)
+);
+
+CREATE TABLE `order`(
+`ID_order` INT UNSIGNED AUTO_INCREMENT,
+`ID_user` INT UNSIGNED NOT NULL,
+`ID_bike` INT UNSIGNED NOT NULL,
+`state_order` TINYINT NOT NULL,
+`time_start` DATETIME NOT NULL,
+`time_finish` DATETIME,
+`loca_start` INT UNSIGNED NOT NULL,
+`long_start` DOUBLE NOT NULL,
+`lat_start` DOUBLE NOT NULL,
+`loca_finish` INT UNSIGNED,
+`long_finish` DOUBLE,
+`lat_finish` DOUBLE,
+`cost` FLOAT,
+`distance` DOUBLE,
+`time_total` FLOAT,
+PRIMARY KEY(`ID_order`),
+FOREIGN KEY (`ID_user`) REFERENCES user(`ID_user`),
+FOREIGN KEY (`ID_bike`) REFERENCES bike(`ID_bike`),
+FOREIGN KEY (`loca_start`) REFERENCES location(`ID_location`),
+FOREIGN KEY (`loca_finish`) REFERENCES location(`ID_location`)
+);
+
+DELIMITER $
+DROP TRIGGER IF EXISTS timeout_order $
+CREATE TRIGGER timeout_order
+BEFORE UPDATE ON `order`
+FOR EACH ROW
+BEGIN
+IF NEW.long_finish = OLD.long_finish AND NEW.lat_finish = OLD.lat_finish THEN
+SET NEW.state_order = 2;
+ELSE
+SET NEW.state_order = 1;
+END IF;
+END$
+DELIMITER ;

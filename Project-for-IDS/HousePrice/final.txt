@@ -1,0 +1,88 @@
+import pandas as pd
+import numpy as np
+from sklearn import preprocessing
+trainx = pd.read_csv("trainData.csv")
+testx = pd.read_csv("testData.csv")
+trainy = trainx['SalePrice']
+del trainx['SalePrice']
+del trainx['Id']
+del testx['Id']
+del trainx['GarageYrBlt']
+del testx['GarageYrBlt']
+data = pd.concat([trainx,testx])
+data.index = range(1460)
+values = {"MasVnrArea":0, "PoolQC":"None","MiscFeature":"None","Alley":"None","Fence":"None","BsmtCond":"None",
+          'LotFrontage':data['LotFrontage'].median(),"MasVnrType":"None",'GarageType':"None", 'GarageFinish':"None",
+          'GarageQual':"None", 'GarageCond':"None", 'GarageType': 'NoGarage','GarageFinish': 'NoGarage', 
+          'GarageQual': 'NoGarage','GarageCond': 'NoGarage'}
+data = data.fillna(value = values, inplace = True)
+data["Newhouse"] = data["MSSubClass"].replace({20: 1, 30: 0, 40: 0, 45: 0,50: 0, 60: 1, 70: 0, 75: 0,
+                                               80: 0, 85: 0,90: 0, 120: 1, 150: 0, 160: 0, 180: 0, 190: 0})
+data.loc[(data["MSSubClass"] == 120)&(data["SaleCondition"] == "Partial")&(data["LandSlope"] == "Mod"), "GrLivArea"] += 2000
+data['MSSubClass'] = data['MSSubClass'].astype(str)
+data['GrLivArea'] = np.log1p(data['GrLivArea'])
+data['GoodSeason'] = data["MoSold"].replace({1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 1, 7: 1, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0})
+data["BadHeating"] = data.HeatingQC.replace({'Ex': 0, 'Gd': 0, 'TA': 0, 'Fa': 1, 'Po': 1})
+del data['MoSold']
+del data['HeatingQC']
+data = data.replace({'Utilities': {'AllPub': 1, 'NoSeWa': 0, 'NoSewr': 0, 'ELO': 0},
+                    'ExterQual': {'Ex': 5,'Gd': 4,'TA': 3,'Fa': 2,'Po': 1},
+                    'BsmtCond': {'Ex': 5,'Gd': 4,'TA': 3,'Fa': 2,'Po': 1,'None': 0},
+                    'Functional': {'Typ': 0,'Min1': 1,'Min2': 1,'Mod': 2,'Maj1': 3,'Maj2': 4,'Sev': 5,'Sal': 6},
+                    'PavedDrive': {'Y': 1,'P': 0,'N': 0},
+                    'GarageQual': {'Ex': 5,'Gd': 4,'TA': 3,'Fa': 2, 'Po': 1,'NoGarage': 0},
+                    'GarageCond': {'Ex': 5,'Gd': 4,'TA': 3,'Fa': 2,'Po': 1,'NoGarage': 0},
+                    'GarageFinish': {'Fin': 3,'RFn': 2,'Unf': 1,'NoGarage': 0}})
+overall_poor = data.OverallQual.copy()
+overall_poor = 5 - overall_poor
+overall_poor[overall_poor<0] = 0
+data['overall_poor_quality'] = overall_poor
+overall_good = data.OverallQual.copy()
+overall_good = overall_good - 5
+overall_good[overall_good<0] = 0
+data['overall_good_quality'] = overall_good
+del data['OverallQual']
+overall_poor = data.OverallCond.copy()
+overall_poor = 5 - overall_poor
+overall_poor[overall_poor<0] = 0
+data['overall_poor_condition'] = overall_poor
+overall_good = data.OverallCond.copy()
+overall_good = overall_good - 5
+overall_good[overall_good<0] = 0
+data['overall_good_condition'] = overall_good
+del data['OverallCond']
+col = data.dtypes[(data.dtypes == 'float64')].index
+for c in col:
+    data[c]=preprocessing.scale(data[c])
+data['YrSold']=preprocessing.scale(data['YrSold'])
+data['YearBuilt']=preprocessing.scale(data['YearBuilt'])
+data['YearRemodAdd']=preprocessing.scale(data['YearRemodAdd'])
+data['TotalBsmtSF']=preprocessing.scale(data['TotalBsmtSF'])
+data['TotRmsAbvGrd']=preprocessing.scale(data['TotRmsAbvGrd'])
+data = pd.get_dummies(data)
+data=data.drop(['MSZoning_RL','Street_Pave','Alley_Grvl','LotShape_IR1','LandContour_Lvl',
+               'LotConfig_Corner','LandSlope_Gtl','Neighborhood_Blmngtn','Condition1_Artery','Condition2_Artery',
+                'BldgType_1Fam','HouseStyle_1.5Fin','RoofStyle_Flat','RoofMatl_ClyTile','Exterior1st_AsbShng',
+                'Exterior2nd_AsbShng','MasVnrType_BrkCmn','ExterCond_Ex','Foundation_BrkTil',
+                'BsmtQual_Ex','BsmtExposure_Av','BsmtFinType1_ALQ','BsmtFinType2_ALQ','Heating_Floor',
+                'CentralAir_N','Electrical_FuseA','KitchenQual_Ex','FireplaceQu_Ex','GarageType_2Types',
+                'PoolQC_Ex','Fence_GdPrv','MiscFeature_Gar2','SaleType_COD','SaleCondition_Abnorml'],axis=1)
+trainx = data[:1160]
+testx = data[1160:]
+trainy = np.log1p(trainy)
+trainx = trainx.drop([518, 1154, 1157])
+trainy = trainy.drop([518, 1154, 1157])
+from sklearn.linear_model import RidgeCV
+from sklearn import metrics
+import math
+model = RidgeCV(cv = 10).fit(trainx, trainy)
+testy = model.predict(testx)
+testy1 = np.expm1(testy)
+from sklearn.ensemble import GradientBoostingRegressor
+model = GradientBoostingRegressor(n_estimators = 500, learning_rate = 0.1, max_depth = 4, max_features = 222).fit(trainx,trainy)
+testy = model.predict(testx)
+testy2 = np.expm1(testy)
+testy = testy1 * 0.69 + testy2 * 0.31 - 435
+sample = pd.read_csv("submission_sample.csv")
+sample['SalePrice'] = testy
+sample.to_csv("answer.csv", index = False)

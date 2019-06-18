@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<findbike>
+    <user ID_user="1001">
+        <account_number>charlie</account_number>
+        <state_user>0</state_user>
+        <location ID_location="77">
+            <Longitude>116.294275</Longitude>
+            <Lattitude>40.014275</Lattitude>
+            <district>Haidian District</district>
+            <street-r>Xueyuanlu Street</street-r>
+            <street-c>Malianwa Street</street-c>
+        </location>
+    </user>
+    <Bikelist>
+        <Bike ID_bike="3211">
+            <location>
+                <Longitude>116.294589</Longitude>
+                <Latitude>40.014386</Latitude>
+            </location>
+        </Bike>
+        <Bike ID_bike="3258">
+            <location>
+                <Longitude>116.296171</Longitude>
+                <Latitude>40.015146</Latitude>
+            </location>
+        </Bike>
+        <Bike ID_bike="7743">
+            <location>
+                <Longitude>116.294698</Longitude>
+                <Latitude>40.014342</Latitude>
+            </location>
+        </Bike>
+    </Bikelist>
+</findbike>

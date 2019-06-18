@@ -1,0 +1,634 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+classoption: a4paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(TTR)
+library(TSA)
+library(forecast)
+library(tseries)
+library(urca)
+library(xts)
+library(vars)
+library(fGarch)
+library(MTS)
+library(readr)
+library(rugarch)
+library(lmtest)
+library(readr)
+#title: "Time-series Analysis about Bitcoin and Mining Hardware"
+#author: "Bojun Wang 1500017775, Qian Wang 1500017773, Ying Fan 1500017729"
+#date: "Jun. 20th, 2018"
+```
+
+## A.Summary
+
+### 1.Problem discussion
+
+Bitcoin is a cryptocurrency and worldwide payment system. It is the first decentralized digital currency, as the system works without a central bank or single administrator. The network is peer-to-peer and transactions take place between users directly, without an intermediary. To gain bitcoins, you have to cost plenty of hardware resources for mining.Therefore, It¡¯s fair to believe that a connection between bitcoin and mining-hardware-selling companies exists. We collect bitcoin history data and the stock price data of these companies from the Internet. Besides analyzing these series independently and making predictions, we can combine them together and look for more interesting results.
+
+### 2.Model description
+
+#### (1)Bitcoin
+
+After doing log transformation and removing seasonality, both bitcoin price and bitcoin volume fit ARIMA model very well. We build an ARIMA(5,5,1) model for bitcoin price and an ARIMA(1,1,1) model for bitcoin volume. Both the residual test and the comparison between forecasts and ground truth give us positive response.
+
+#### (2)Stock
+
+The fitting model for stock price after log transformation is Arima(0,1,0), and for volume series without seasonal part is Arima(2,1,4). Predictions in first days of both closing price and volume are good in the test set, but fall outside the 95% confidence bound in the last days of the test set. Also, the sudden rise cannot be predicted well.
+
+#### (3)Bitcoin and Stock
+
+To analyse and forecast the stock prices of NYSE:AMD (Advanced Micro Devices, Inc) and NYSE:NVDA (NVIDIA Corp.) using Bitcoin prices, we propose two methods of modelling
+
+* VAR and VECM  
+* Linear Regression(stock price ~ btc price) + GARCH modelling of residuals
+
+We fit the model of ARMA(4, 3)~GRACH(1, 1) to the residuals of AMD vs BTC, and ARMA(5, 2)~GRACH(1, 1) to the residuals of NVDA vs BTC. Both predictions yield precise forecasts, especially in less than 8 days. And this model significantly outperforms VAR prediction in both mean and variance accuracy. 
+
+### 3.Analysis Conclusion
+
+We provided independent modelling for prices and trading volumns of BTC, AMD and NVDA, which we believe can precisely capture the mean characteristics of the time series of interest. For bitcoin analysis, we can get reliable models which can be used to predict the price and the volume.But for stock price, we find that it's harder to model the stock series than bitcoin. In order to take into account the trend and impact factors affecting both BTC and stock prices, we introduced the ARMA-GARCH modelling of regression residuals. Forecast results show that this method performs better than both ARIMA and VAR predictions, adding causal effect of an endogenous variable to ARIMA and a conditional heteroskedasticity to VAR. We are optimistic about its application in future analyses and predictions. 
+
+## B.Approach
+
+### 1.Hypothesis Statement
+
+* We can use bitcoin history data to predict its future price and volume.
+* We can use stock history data to predict its future price and volume.
+* Bitcoin price and trades will, as a market signal, have impact on the behaviors of the miners. Then the miners will adjust their mining cost as a response.The adjustment of the mining cost is related with the purchase of the mining hardware, which will reflect directly in the conditions of the mining-hardware-selling companies. Therefore, with the help of bitcoin data, we can get better predictions on the stock.
+
+### 2.Previous Work
+
+We list several researches on Bitcoin with Mining Hardware, which study the time series such as BTC-toUSD exchange rate, mining difficulty level, Daily revenue per GH/s, investors¡¯ attractiveness.
+
+* Taylor M B. The Evolution of Bitcoin Hardware[J]. Computer, 2017, 50(9): 58-66.
+* Kristoufek L. What are the main drivers of the Bitcoin price? Evidence from wavelet coherence analysis[J]. PloS one, 2015, 10(4): e0123923.
+* Bouoiyour J, Selmi R, Tiwari A. Is Bitcoin business income or specul
+
+### 3.Data Sources
+
+All the data we use are from Yahoo finance website. Everyone can download the data from address links as below.
+
+* [Bitcoin](https://finance.yahoo.com/quote/BTC-USD/history?p=BTC-USD)
+* [AMD](https://finance.yahoo.com/quote/AMD/history?p=AMD)
+* [NVIDIA](https://finance.yahoo.com/quote/NVDA/history?p=NVDA)
+
+Each data includes open price, highest price, lowest price, close price, adjusted close price and volume everyday. We only pick the "adj.close" colume and "volume" colume because adj.close price is more appropriate in this situation.
+
+### 4.Bitcoin
+
+#### Special cases
+
+We find some zeros in the bitcoin "volume" colume, one segment is before 2010-7-17 and the other is from 2011-06-19 to 2011-06-24. We search for what happened and it turns out that the first bitcoin trade platform was established on Jul.17th, 2010 and that on 19 June 2011, a hacker allegedly used credentials from a Mt. Gox auditor¡¯s compromised computer to transfer a large number of bitcoins illegally to himself. These dates when people couldn't trade bitcoin will effect our model so we just remove these zeros.
+There are other huge cases in bitcoin history for one reason or another. For example, in early February 2014, one of the largest bitcoin exchanges, Mt. Gox suspended withdrawals citing technical issues. By the end of the month, Mt. Gox had filed for bankruptcy protection in Japan amid reports that 744,000 bitcoins had been stolen. But if we remove all the fluctuations we will underestimate the variance and the model will become meaningless. So we keep them anyway.
+
+#### Transformation
+
+We find the time series have bad condition because of the explosive trend, even the differential helps nothing. 
+So we do a log transformation then it shows good condition. Both the price and the volume are stational after first difference.
+
+#### Seasonality
+
+Considering the seasonality, we make decompositions on the series. Bitcoin trading is allowed everyday so the cycle is 365 days naturally. We will add the seasonality back later while forecasting.
+
+#### ARIMA
+
+We construct ARIMA model for log price and log volume without seasonality. The result is ARIMA(5, 1, 1) for price and ARIMA(1, 1, 1) for volume.
+
+#### Justification
+
+We apply Ljung-Box test to the residuals. The high p-values(0.9997, 0.6928) mean our model fit the data very well.
+
+#### Forecast
+
+We construct the model using the data before 2018-05-25, then forecast the price and volume from 2018-05-25 to 2018-06-02. The results for price are very good and the forecast line clings to the ground truth. The results for volume are a little worse but the forecast line is still in the 95% confidence interval.
+
+### 5.Stock
+
+#### Price analysis
+
+Like the analysisi of bitcoin, we first have a try on simple arima models to see the characteristics of the closing price and volume changes of the hardware company. The data is from 05/22/2009 to 05/03/2017, and we select the last 10 days for the test set and the rest for training.One thing different from the bitcoin data is that there are 250 business days for stock per year, so the frequency of the data is set 250. 
+
+#### Log Transformation
+
+We can roughly see from the picture that the variance of the sequence is increasing through time. So we try log transformation and see how the variance could be adjusted.
+
+#### Seasonal Or Not?
+
+We tried seasonal decomposition on the log data. It turns out that no obvious need for this decomposition, and in fact the result based on the whole data is also better.
+
+#### Arima&LB test of the Original
+
+By ADF test we find that the log data of the stock's closing price is actually a unit root.Arima model on the log data. Same result as modeling on the difference. The residual has no obvious autocorrelation with p-value=0.25.
+
+#### Forecast
+
+Modeling result for 10 days forward, we can see from the result that the prediction fits quite well in the first days, but the results of the last days exceed the 95% confidence intervel a little.
+
+#### Volume analysis
+
+The steps are quite similar from the former analysis, but the series of volume itself has some different characteristics. 
+
+#### Seasonal Decomposition
+
+From the picture we know that the variance is almost not changing through time, and the seasonal undulation is rather obvious. So we decompose without log transformation.We start to analyse the data without the season part, and then we will add it back to the prediction result while forecasting.
+
+#### Arima Model of the Original
+
+After the similar stationary test and eacf, it turns out that Arima (2,1,4) can be used in modeling.But we notice that the result of Ljung-Box test is not so good (p-value=0.06, just exceed 5%). And this may lead to worse prediction.
+
+#### Forecast+Seasonal Part
+
+We add the seasonal part back to the prediction. It turns out that the first days fit well, but the sudden rise cannot be predicted accurately.So as above, we find that it's harder to model the stock series than bitcoin. But in real life the stock price gets more attention from people. One reasonable guess for the limitation of the stock prediction is that it could be affected by factors outside, such as bitcoins which drive the demand of the hardware that company produces. So in the next part we will discuss how to use bitcoin data to predict the stock price.
+
+###6.BTC vs AMD
+
+#### (1) General Analyses  
+  
+According to the plots, the AMD stock price time-series(AMD series for short, and henceforth) follows a generally unit root process throughout the time span, while the BTC-versus-USD rate time series(BTC series) exhibited a dramatic shift in pattern. Within the first half of the time series (approximately year 2010 through year 2013), the BTC price was low and stable. Since the year of 2013, global production of Bitcoins was halved for the first time, and Bitcoin prices have been moving in a unit-root pattern, having a stronger link to the AMD stock prices.  
+
+In the following analyses of this section, we select part of the series after this major adjustment to rule out the 2013 impact on BTC series and to focus on the unit-root process of BTC series after the adjustment.   
+
+#### (2) Co-integration analysis with VECM and VAR
+
+From the results of Augmented Dick-Fuller tests we can learn that the second half of AMD series and BTC series independently are non-stationary, while the first difference of the two series are significantly stationary. We can conclude that the two adjusted series follow first-order unit-root processes. 
+  
+The Johansen procedure for VAR shows clear co-integration between BTC and AMD series. Coefficient matrix estimations are listed in the appendix. The prediction is close to actual prices, but cannot satisfactorily capture the upward trend of AMD stock prices. 
+
+#### (3) Linear modelling and time-series analysis of residuals  
+
+Apart from the VAR and VEC models, the linear regression is another simple and efficient method to test and model the co-movements of two series. After the linear regression,  we will perform a time-series modelling on the residual series to fully capture the auto-dependence of co-integration models. 
+  
+Regression result indicates a strong correlation and goodness-of-fit between the AMD series and BTC series. As the Johansen Procedure signifies a strong co-integration result, the regression shows clear causal relation and strong explanation power. 
+
+Results of the Durbin-Watson test show possibilities of further time-series dependence to be discovered. The plot of residuals exhibits two major patterns: an upward trend and some volatility clustering characteristics. Based on ADF test and ARCH test results, we specified a GARCH(1, 1) model with mean model of ARIMA(4, 3)
+
+The prediction outcome (caluculated from an in-sample re-modelling) is listed and plotted in the Appendix. We can see that a 95% confidence interval covers the actual AMD series, and the linear-GARCH prediction efficiently follows the trend of AMD stock price. Compared to VAR and VECM models, this combination does better in capturing upward trends and yields a smaller variation in longer prediction spans. 
+
+###7.BTC vs NVDA  
+
+#### (1) General Analyses  
+
+The series of NVDA stock price series(NVDA series) is of closer relationship than AMD series, which also exhibits a "dormant" period and a unit-root period. 
+
+####(2)Co-integration analysis with VECM and VAR
+
+NVDA and BTC series exhibit strong co-integration, as showed by the Johansen procedure results. The prediction outcome is listed in the Appendix. 
+
+#### (3) Linear modelling and time-series analysis of residuals  
+
+Again we perform a linear regression with BTC as independent and NVDA as dependent. The causal relatonship is significant, while the residual series is indistinct between integration and stationarity, probalby due to the ARCH effect. As the estimated model using AIC is ARIMA(5, 1, 2), we set ARMA(5, 2) as the mean model, and GARCH(1, 1) as variance model.
+
+Despite that our linear-GARCH model did not expect the downward impact at the end of the prediction (probably due to some weak unit-root effect that cannot be fit into a GARCH model), it successfully and precisely covered the trend of NVDA  stock price in recent prediction periods, and outperformed the VAR prediction considering the mean and long-term variation.
+
+## C.Appendix
+
+### 0.A necessary function imported from former FinTS
+
+```{r}
+ArchTest <- function (x, lags=12, demean = FALSE) 
+{
+# Capture name of x for documentation in the output  
+  xName <- deparse(substitute(x))
+# 
+  x <- as.vector(x)
+  if(demean) x <- scale(x, center = TRUE, scale = FALSE)
+#  
+  lags <- lags + 1
+  mat <- embed(x^2, lags)
+  arch.lm <- summary(lm(mat[, 1] ~ mat[, -1]))
+  STATISTIC <- arch.lm$r.squared * length(resid(arch.lm))
+  names(STATISTIC) <- "Chi-squared"
+  PARAMETER <- lags - 1
+  names(PARAMETER) <- "df"
+  PVAL <- 1 - pchisq(STATISTIC, df = PARAMETER)
+  METHOD <- "ARCH LM-test;  Null hypothesis:  no ARCH effects"
+  result <- list(statistic = STATISTIC, parameter = PARAMETER, 
+                 p.value = PVAL, method = METHOD, data.name =
+                 xName)
+  class(result) <- "htest"
+  return(result)
+}
+```
+
+### 1.Bitcoin
+
+#### Read data, remove zeros and plot data
+
+```{r}
+bitcoin = read.csv('BTC-USD.csv', header = T)
+bitcoin[which(bitcoin$Volume == 0),]
+bitcoin = bitcoin[which(bitcoin$Volume != 0),]
+bitcoin_date = as.Date(bitcoin$Date)
+bitcoin_p = ts(bitcoin$Adj.Close)
+bitcoin_v = ts(bitcoin$Volume)
+plot(bitcoin_date, bitcoin_p, type = "l", main = "bitcoin price")
+plot(bitcoin_date, bitcoin_v, type = "l", main = "bitcoin volume")
+```
+
+#### Bad Condition Without Transformation
+
+```{r}
+eacf(bitcoin_p)
+p1 = diff(bitcoin_p, ndiffs(bitcoin_p))
+plot(p1, main = "bitcoin price with first differential")
+```
+
+#### Good Condition After Transformation
+
+```{r}
+plog = log(bitcoin_p)
+vlog = log(bitcoin_v)
+plot(bitcoin_date, plog, type = "l", main = "bitcoin log price")
+plot(bitcoin_date, vlog, type = "l", main = "bitcoin log volume")
+```
+
+#### Stationary
+
+```{r}
+plog1 = diff(plog, ndiffs(plog))
+vlog1 = diff(vlog, ndiffs(vlog))
+plot(plog1, main = "bitcoin log price with differential")
+plot(vlog1, main = "bitcoin log volume with differential")
+```
+
+#### Seasonality
+
+```{r}
+plog = ts(plog, frequency = 365)
+vlog = ts(vlog, frequency = 365)
+plog_cycle = decompose(plog)
+vlog_cycle = decompose(vlog)
+plog_no_season = ts(plog - plog_cycle$seasonal)
+vlog_no_season = ts(vlog - vlog_cycle$seasonal)
+plot(plog_cycle)
+plot(vlog_cycle)
+```
+
+#### ARIMA
+
+```{r}
+pmodel = auto.arima(plog_no_season)
+pmodel
+vmodel = auto.arima(vlog_no_season)
+vmodel
+```
+
+#### Justification
+
+```{r}
+pbox = Box.test(pmodel$residuals)
+pbox
+vbox = Box.test(vmodel$residuals)
+vbox
+```
+
+#### Forecast
+
+```{r}
+p_result = forecast(pmodel, h = 9)
+v_result = forecast(vmodel, h = 9)
+
+bitcoin_test = read.csv('BTC-USD-to-last-sunday.csv', header = T)
+bitcoin_test = bitcoin_test[which(bitcoin_test$Volume != 0),]
+bitcoin_test = bitcoin_test[2864:2872,]
+p_valid = ts(log(bitcoin_test$Adj.Close), start = 2864, end = 2872)
+v_valid = ts(log(bitcoin_test$Volume), start = 2864, end = 2872)
+
+pse = plog_cycle$seasonal[(2864 - 365):(2872-365)]
+pse = ts(pse, start = 2864, end = 2872)
+vse = vlog_cycle$seasonal[(2864 - 365):(2872-365)]
+vse = ts(vse, start = 2864, end = 2872)
+
+#use ground truth minus seasonality for simplity
+plot(p_result, xlim = c(2864, 2872), ylim = c(8.2,9.2), main = "price prediction")
+lines(p_valid - pse, col = "green")
+plot(v_result, xlim = c(2864, 2872), ylim = c(18.5,22), main = "volume prediction")
+lines(v_valid - vse, col = "green")
+```
+
+#### Final Result
+
+```{r}
+temp = data.frame(v_valid, v_result$mean + vse, v_result$mean + vse - v_valid)
+colnames(temp) = c("True", "Predict", "error")
+rownames(temp) = seq.Date(from = as.Date("2018-05-25"), to = as.Date("2018-06-02"), by = 1)
+temp
+temp = data.frame(p_valid, p_result$mean + pse, p_result$mean + pse - p_valid)
+colnames(temp) = c("True", "Predict", "error")
+rownames(temp) = seq.Date(from = as.Date("2018-05-25"), to = as.Date("2018-06-02"), by = 1)
+temp
+```
+
+### 2.Stock series analysis
+
+#### Reading data and transition process of the original data.
+
+```{r}
+data=read.csv('AMD.csv',header=TRUE, encoding='UTF-8')
+close=data['Adj.Close']
+for (i in 1:2001){
+  close[i,1]=data['Adj.Close'][2002-i,1]}
+volume=data['Volume']
+for (i in 1:2001){
+  volume[i,1]=data['Volume'][2002-i,1]}
+time=data['Date']
+for (i in 1:2001){
+  time[i,1]=data['Date'][2002-i,1]}
+close_t=close[1:1991,1]
+close_test=close[1992:2001,1]
+close_t=ts(close_t,frequency = 250,start = c(2009,5,22))
+plot.ts(close_t,main="Closing price of AMD")
+```
+
+#### Log Transformation
+
+```{r}
+logclose=log(close_t)
+plot.ts(logclose)
+```
+
+#### Seasonal Or Not?
+
+```{r}
+result=decompose(logclose)
+plot(result)
+```
+
+#### Adf Test
+
+```{r}
+adf.test(logclose)
+logclose=c(logclose)
+d=diff(logclose,differences = 1)
+adf.test(d)
+```
+
+#### Analysis of difference
+
+Print out the eacf, and we can verificate the former result from another aspect.
+```{r}
+auto.arima(d)
+eacf(d)
+```
+
+####Arima&LB test of the Original
+
+```{r}
+auto.arima(logclose)
+fit=auto.arima(logclose)
+Box.test(fit$residuals,type = "Ljung-Box",lag=20)
+plot.ts(fit$residual)
+```
+
+####Forecast
+
+```{r}
+forward=forecast(fit,h=10)
+plot(forward,main="forward")
+plot(forward,xlim=c(1992,2001),main="prediction")
+lines(log(close),col="green")
+error=forward$mean-log(close_test)
+plot(error)
+```
+
+#### Volume analysis
+
+```{r}
+volume_t=volume[1:1991,1]
+volume_test=volume[1992:2001,1]
+volume_t=ts(volume_t,frequency = 250,start = c(2009,5,22))
+volume_t[1414]=(volume_t[1413]+volume_t[1415])/2
+plot.ts(volume_t,main="Volume of stock")
+```
+
+#### Seasonal Decomposition
+```{r}
+result=decompose(volume_t)
+plot(result)
+```
+
+####Differential for stationary
+
+```{r}
+volume_t=c(volume_t-result$seasonal)
+d=diff(volume_t,ndiffs(volume_t))
+adf.test(d)
+auto.arima(d)
+eacf(d)
+```
+
+####Arima Model of the Original
+
+```{r,echo=FALSE}
+auto.arima(volume_t)
+fit=auto.arima(volume_t)
+Box.test(fit$residuals,type = "Ljung-Box",lag=20)
+```
+
+####Forecast+Seasonal Part
+
+```{r}
+forward=forecast(fit,h=10)
+s=ts(result$seasonal[(1992-365):(2001-365)],start=1992)
+forward$mean=forward$mean+s
+plot(forward,xlim=c(1992,2001),main="prediction")
+lines(volume,col="green")
+error=forward$mean-volume_test
+plot(error)
+```
+
+### 3.BTC vs AMD
+
+#### Reading and cleaning data
+
+```{r, cache=TRUE}
+btc_data = read.csv('BTC-USD.csv', as.is=TRUE, encoding='UTF-8')
+amd_data = read.csv('AMD.csv', as.is=TRUE, encoding='UTF-8')
+amd_data$Date = as.Date(amd_data$Date)
+btc_data$Date = as.Date(btc_data$Date)
+btc_data2 = btc_data[which(btc_data$Date %in% amd_data$Date), ]
+amd_data2 = amd_data[which(amd_data$Date %in% btc_data2$Date), ]
+nvda_data = read.csv('NVDA.csv', as.is=TRUE)
+nvda_data$Date = as.Date(nvda_data$Date)
+nvda_data2 = nvda_data[which(nvda_data$Date %in% btc_data2$Date), ]
+```
+
+#### Slicing vectors
+
+```{r}
+btc_s = xts(btc_data2$Adj.Close, order.by=btc_data2$Date)
+amd_s = xts(amd_data2$Adj.Close, order.by=amd_data2$Date)
+btc_s2 = btc_s[800:1709]
+amd_s2 = amd_s[800:1709]
+btc_v = as.vector(btc_s)
+amd_v = as.vector(amd_s)
+btc_v2 = as.vector(btc_s2)
+amd_v2 = as.vector(amd_s2)
+```
+
+#### Unit-root tests
+
+```{r}
+adf.test(amd_s2)
+adf.test(btc_s2)
+adf.test(diff(amd_v2))
+adf.test(diff(btc_v2))
+```
+
+#### VECM modelling
+
+```{r, cache=TRUE}
+f2 = data.frame(btc = btc_v2, amd = amd_v2)
+model2 = ca.jo(f2)
+summary(model2)
+cajorls(model2)
+```
+
+#### VAR estimation and in-sample prediction
+
+```{r, cache=TRUE}
+vec2var(model2)
+f3 = f2[1:900, ]
+model3 = ca.jo(f3)
+predict(vec2var(model3))
+```
+
+#### Linear regression results
+
+```{r}
+fit1 = lm(amd_v2~btc_v2)
+summary(fit1)
+dwtest(fit1)
+```
+
+#### Residuals
+
+```{r, cache=TRUE}
+e1 = resid(fit1)
+
+plot(e1, type='l')
+```
+
+#### Residual analysis
+
+```{r, cache=TRUE}
+adf.test(e1)
+ArchTest(e1)
+auto.arima(e1, stationary=TRUE)
+spec1 = ugarchspec(mean.model=list(armaOrder = c(4, 3), include.mean = TRUE, archm = FALSE, archpow = 1, arfima =FALSE, external.regressors = NULL, archex = FALSE))
+g1 = ugarchfit(spec = spec1, data=e1, solver='hybrid', out.sample=10)
+m1 = fitted(ugarchforecast(g1))
+m2 = sigma(ugarchforecast(g1))
+```
+
+#### Prediction results and plots
+
+```{r}
+fit2 = lm(f3$amd~f3$btc)
+b0 = fit2$coefficients[1]
+b1 = fit2$coefficients[2]
+vb = btc_v2[901:910]
+va = amd_v2[901:910]
+vaf = vb*b1+b0
+vafg = vaf+m1[, 1]
+vafg1 = vafg + 1.96*m2[, 1]
+vafg2 = vafg - 1.96*m2[, 1]
+out = data.frame(actual = va, linear=vaf, fitted = vafg, upperCI = vafg1, lowerCI = vafg2)
+out
+```
+
+#### Black line indicates actual AMD stock prices, red line stands for linear prediction results, blue line for linear fitted values plus GARCH fitted values, green lines for 95% confidence intervals of the linear-GARCH model.
+
+```{r}
+plot(out$actual, type='l', ylim = c(11,15))
+lines(out$linear, col='red')
+lines(out$fitted, col='blue')
+lines(out$upperCI, col='green')
+lines(out$lowerCI, col='green')
+```
+
+### 4.BTC vs NVDA
+
+#### Reading and cleaning data
+
+```{r}
+nvda_v = nvda_data2$Adj.Close
+adf.test(nvda_v)
+adf.test(diff(nvda_v))
+```
+
+#### VAR diagnostics and in-sample prediction
+
+```{r, echo=TRUE}
+f02 = data.frame(btc = btc_v, nvda = nvda_v)
+model02 = ca.jo(f02)
+summary(model02)
+cajorls(model02)
+vec2var(model02)
+f03 = f02[1:1702, ]
+model03 = ca.jo(f03)
+predict(vec2var(model03))
+```
+
+#### Linear regression results
+
+```{r}
+fit01 = lm(nvda_v~btc_v)
+summary(fit01)
+dwtest(fit01)
+```
+
+#### Residuals
+
+```{r, cache=TRUE}
+e01 = resid(fit01)
+
+plot(e01, type='l')
+```
+
+#### Residual analysis
+
+```{r, cache=TRUE}
+adf.test(e01)
+ArchTest(e01)
+auto.arima(e01)
+```
+```{r, cache=TRUE}
+spec01 = ugarchspec(mean.model=list(armaOrder = c(5, 2), include.mean = TRUE, archm = FALSE, archpow = 1, arfima =FALSE, external.regressors = NULL, archex = FALSE))
+g01 = ugarchfit(spec = spec01, data=e01, solver='hybrid', out.sample=10)
+m01 = fitted(ugarchforecast(g01))
+m02 = sigma(ugarchforecast(g01))
+```
+
+#### Prediction results and plots
+
+```{r}
+fit02 = lm(f03$nvda~f03$btc)
+b0 = fit02$coefficients[1]
+b1 = fit02$coefficients[2]
+vb = btc_v[1703:1712]
+va = nvda_v[1703:1712]
+vaf = vb*b1+b0
+vafg = vaf+m01[, 1]
+vafg1 = vafg + 1.96*m02[, 1]
+vafg2 = vafg - 1.96*m02[, 1]
+out = data.frame(actual = va, linear=vaf, fitted = vafg, upperCI = vafg1, lowerCI = vafg2)
+out
+```
+
+#### Black line indicates actual NVDA stock prices, red line stands for linear prediction results, blue line for linear fitted values plus GARCH fitted values, green lines for 95% confidence intervals of the linear-GARCH model. 
+
+```{r, echo=TRUE}
+plot(out$actual, type='l', ylim = c(80,120))
+lines(out$linear, col='red')
+lines(out$fitted, col='blue')
+lines(out$upperCI, col='green')
+lines(out$lowerCI, col='green')
+```
