@@ -1,2 +1,5 @@
-# Project-for-IDM
 Project for Introduction of Data Mining
+
+This project is a copy of https://github.com/QuantLet/exgb in nature.
+
+We slightly edit it and run our own results.
