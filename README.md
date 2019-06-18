@@ -4,11 +4,9 @@
 
 **程序设计实习**(Practice of Programming-in-C&C++)：吃豆人
 
-**算法设计与分析**(Algorithm Design and Analysis)：推荐系统
-
 **数据结构与算法实习**(Practice of Data Structure and Algorithm)：提取标签
 
-**深度学习**(Deep Learning)：图像修复
+**算法设计与分析**(Algorithm Design and Analysis)：推荐系统
 
 **数据库概论**(Introduction of Database)：共享单车系统
 
@@ -17,6 +15,8 @@
 **数据挖掘导论**(Introduction of Data Mining)：EXGB
 
 **计算方法**(Numerical Method)：双曲偏微分
+
+**深度学习**(Deep Learning)：图像修复
 
 **计算机视觉与深度学习**(Computer Vision and Deep Learning)：视频检测
 

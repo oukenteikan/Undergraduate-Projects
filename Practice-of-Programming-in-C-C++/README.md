@@ -1,2 +1,3 @@
-# Project-for-PPC
-Project for Practice of Programming in C&amp;C++
+Project for Practice of Programming in C&C++
+
+It seems my final version was not archived, so only a sample here.
