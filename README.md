@@ -20,4 +20,4 @@
 
 **统计学习**(Statistical Learning)：llda, admm
 
-**计算机系统导论**(Introduction of Computer Systems)：全部lab
+**计算机系统导论**(Introduction of Computer Systems)：ICS CSAPP Labs
