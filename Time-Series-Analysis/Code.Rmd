@@ -22,7 +22,7 @@ library(rugarch)
 library(lmtest)
 library(readr)
 #title: "Time-series Analysis about Bitcoin and Mining Hardware"
-#author: "Bojun Wang 1500017775, Qian Wang 1500017773, Ying Fan 1500017729"
+#author: "Bojun Wang, Qian Wang, Ying Fan"
 #date: "Jun. 20th, 2018"
 ```
 
